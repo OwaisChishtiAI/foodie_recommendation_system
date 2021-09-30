@@ -1,0 +1,19 @@
+each recepie must have id for favourites and other
+
+
+PINTEREST
+login button class - tBJ dyH iFc yTZ pBj tg7 mWe
+
+pin class - Wk9 xQ4 CCY czT DUt iyn kVc MNX LIa
+Wk9 xQ4 CCY czT ho- kVc
+
+
+
+
+Recommendation system KPIs:
+demographics
+    location from IP
+    searches
+    clicks
+    favourites
+    
