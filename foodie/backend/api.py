@@ -69,6 +69,7 @@ def recipe_titles_fn():
     connect = Connect()
     print("RECIPE TITLES #####################################")
     titles = recipe_titles_db(connect)
+    print(titles[:5])
     return jsonify({"recipies" : titles})
 
 def recipe_titles_db(connect):
@@ -98,6 +99,52 @@ def recipe_details_db(recipe_title, connect):
     connect.close()
     return details
 
+@app.route("/add_favourites", methods=['POST'])
+def add_favourites_fn():
+    connect = Connect()
+    data = request.form.to_dict()
+    print("ADD FAVS #####################################", data)
+    details = add_favourites_db(data, connect)
+    return details
+
+def add_favourites_db(data, connect):
+    sql = "SELECT fav1, fav2, fav3, fav4, fav5 FROM favourites WHERE username = '{}'".format(data["username"])
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    details = cursor.fetchone()
+    
+    fav_number = 'undefined'
+    for i in range(len(details)):
+        if not details[i]:
+            fav_number = i+1
+            break
+    if fav_number == "undefined":
+        details = "404"
+    else:
+        print("AVAILABLE FAV INDEX", fav_number)
+        sql2 = "UPDATE favourites SET fav{0} = '{1}' WHERE username = '{2}'".format(fav_number, data['recipe_title'], data["username"])
+        cursor.execute(sql2)
+        db.commit()
+        details = "200"
+    connect.close()
+    return details
+
+@app.route("/get_favourites", methods=['POST'])
+def get_favourites_fn():
+    connect = Connect()
+    data = request.form.to_dict()
+    print("GET FAVS #####################################", data)
+    details = get_favourites_db(data, connect)
+    return jsonify({"favs" : details})
+
+def get_favourites_db(data, connect):
+    sql = "SELECT fav1, fav2, fav3, fav4, fav5 FROM favourites WHERE username = '{}'".format(data["username"])
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    details = cursor.fetchone()
+    connect.close()
+    return details
+
 def login_db(data, connect):
     username = data['username']
     password = data['password']
@@ -106,6 +153,20 @@ def login_db(data, connect):
     cursor, db = connect.pointer()
     cursor.execute(sql)
     register_id = cursor.fetchall()
+    if register_id:
+        sql2 = sql = "SELECT username FROM favourites WHERE username = '{}'".format(username)
+        cursor.execute(sql2)
+        exists = cursor.fetchone()
+        print("USER EXISTS IN LOGIN")
+        if not exists:
+            sql3 = "INSERT INTO favourites (username) VALUES (%s);"
+            cursor.execute(sql3, (username,))
+            db.commit()
+            print("USER SAVED IN FAVS")
+        else:
+            print("USER ALREADY EXISTS IN FAVS")
+    else:
+        print("USER NOT FOUND")
     connect.close()
     return register_id
 
