@@ -64,6 +64,40 @@ def login_fn():
     else:
         return "404"
 
+@app.route("/recipe_titles", methods=['POST'])
+def recipe_titles_fn():
+    connect = Connect()
+    print("RECIPE TITLES #####################################")
+    titles = recipe_titles_db(connect)
+    return jsonify({"recipies" : titles})
+
+def recipe_titles_db(connect):
+    sql = "SELECT recipe_title FROM recipe_core"
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    titles = cursor.fetchall()
+    connect.close()
+    titles_li = []
+    for each in titles:
+        titles_li.append(each[0])
+    return titles_li
+
+@app.route("/recipe_details", methods=['POST'])
+def recipe_details_fn():
+    connect = Connect()
+    recipe_title = request.form.to_dict()['recipe']
+    print("RECIPE DETAILS #####################################", recipe_title)
+    details = recipe_details_db(recipe_title, connect)
+    return jsonify({"details" : details})
+
+def recipe_details_db(recipe_title, connect):
+    sql = "SELECT * FROM recipe_core WHERE recipe_title = '{}'".format(recipe_title)
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    details = cursor.fetchone()
+    connect.close()
+    return details
+
 def login_db(data, connect):
     username = data['username']
     password = data['password']
