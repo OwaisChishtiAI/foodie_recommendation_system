@@ -3,6 +3,7 @@ from flask import Flask, json, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
 from dateutil import parser
+import random
 
 app = Flask(__name__)
 CORS(app)
@@ -88,8 +89,10 @@ def recipe_details_fn():
     connect = Connect()
     recipe_title = request.form.to_dict()['recipe']
     username = request.form.to_dict()['username']
-    print("RECIPE DETAILS #####################################", recipe_title)
+    print("RECIPE DETAILS AND RECOM SET #####################################", recipe_title)
     details = recipe_details_db(recipe_title, connect)
+    connect = Connect()
+    user_clicks_db(recipe_title, username, connect)
     return jsonify({"details" : details})
 
 def recipe_details_db(recipe_title, connect):
@@ -120,7 +123,37 @@ def user_clicks_db(recipe_title, username, connect):
     cursor.execute(sql4)
     db.commit()
     connect.close()
+    print("[INFO] Recommendation SET TO: ", cluster)
     # return details
+
+@app.route("/get_recommendations", methods=['POST'])
+def get_recommendations_fn():
+    connect = Connect()
+    username = request.form.to_dict()['username']
+    print("GET RECOMS #####################################", username)
+    recommendations = get_recommendations_db(username, connect)
+    return jsonify({"recommendations" : recommendations})
+
+def get_recommendations_db(username, connect):
+    sql = "SELECT recommended FROM user_clicks WHERE username = '{}'".format(username)
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    cluster_id = cursor.fetchone()[0]
+    print("USER CLUSTER ID ", cluster_id)
+    if cluster_id:
+        sql2 = "SELECT recipe_img, recipe_title FROM recipe_core WHERE cluster_id = {}".format(cluster_id)
+        cursor.execute(sql2)
+        recommendations = cursor.fetchall()
+        connect.close()
+        # print(recommendations)
+        recommendations = [random.choice(recommendations) for _ in range(5)]
+        recommendations_li = []
+        for each in recommendations:
+            recommendations_li.append(list(each))
+        return recommendations_li
+    else:
+        print("USER HAS NO RECOMMENDATIONS FOR NOW.")
+    return ""
 
 @app.route("/add_favourites", methods=['POST'])
 def add_favourites_fn():
@@ -206,10 +239,10 @@ def login_db(data, connect):
     return register_id
 
 if __name__ == "__main__":
-    # try:
-    #     # connect = Connect()
-    #     app.run('0.0.0.0', debug=True)
-    # except Exception as e:
-    #     print("[Exception] ", str(e))
-    connect = Connect()
-    user_clicks_db("Eggplant Bliss Bowl with Mint and Cilantro Chutney", "sowais672@gmail.com", connect)
+    try:
+        # connect = Connect()
+        app.run('0.0.0.0', debug=True)
+    except Exception as e:
+        print("[Exception] ", str(e))
+    # connect = Connect()
+    # get_recommendations_db("sowais672@gmail.com", connect)
