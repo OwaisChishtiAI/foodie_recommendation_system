@@ -87,6 +87,7 @@ def recipe_titles_db(connect):
 def recipe_details_fn():
     connect = Connect()
     recipe_title = request.form.to_dict()['recipe']
+    username = request.form.to_dict()['username']
     print("RECIPE DETAILS #####################################", recipe_title)
     details = recipe_details_db(recipe_title, connect)
     return jsonify({"details" : details})
@@ -98,6 +99,28 @@ def recipe_details_db(recipe_title, connect):
     details = cursor.fetchone()
     connect.close()
     return details
+
+def user_clicks_db(recipe_title, username, connect):
+    sql = "SELECT cluster_id FROM recipe_core WHERE recipe_title = '{}'".format(recipe_title)
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    cluster_id = cursor.fetchone()[0]
+    # connect.close()
+    sql2 = "SELECT list_of_clusters FROM user_clicks WHERE username = '{}'".format(username)
+    cursor.execute(sql2)
+    list_of_clusters = cursor.fetchone()[0]
+    list_of_clusters = list_of_clusters + str(cluster_id)
+    sql3 = "UPDATE user_clicks SET list_of_clusters = '{0}' WHERE username = '{1}'".format(list_of_clusters, username)
+    cursor.execute(sql3)
+    db.commit()
+
+    clusters = [int(x) for x in list_of_clusters]
+    cluster = max(clusters)
+    sql4 = "UPDATE user_clicks SET recommended = '{0}' WHERE username = '{1}'".format(cluster, username)
+    cursor.execute(sql4)
+    db.commit()
+    connect.close()
+    # return details
 
 @app.route("/add_favourites", methods=['POST'])
 def add_favourites_fn():
@@ -165,14 +188,28 @@ def login_db(data, connect):
             print("USER SAVED IN FAVS")
         else:
             print("USER ALREADY EXISTS IN FAVS")
+
+        sql4 = "SELECT username FROM user_clicks WHERE username = '{}'".format(username)
+        cursor.execute(sql2)
+        exists = cursor.fetchone()
+        if not exists:
+            sql5 = "INSERT INTO user_clicks (username) VALUES (%s, %s, %s);"
+            cursor.execute(sql5, (username,"",""))
+            db.commit()
+            print("USER SAVED IN USER CLICKS")
+        else:
+            print("USER ALREADY EXISTS IN USER CLICKS")
+
     else:
         print("USER NOT FOUND")
     connect.close()
     return register_id
 
 if __name__ == "__main__":
-    try:
-        # connect = Connect()
-        app.run('0.0.0.0', debug=True)
-    except Exception as e:
-        print("[Exception] ", str(e))
+    # try:
+    #     # connect = Connect()
+    #     app.run('0.0.0.0', debug=True)
+    # except Exception as e:
+    #     print("[Exception] ", str(e))
+    connect = Connect()
+    user_clicks_db("Eggplant Bliss Bowl with Mint and Cilantro Chutney", "sowais672@gmail.com", connect)

@@ -17,3 +17,8 @@ demographics
     clicks
     favourites
     
+
+FE -> recipe_title
+recipe_core table -> cluster_id on recipe_title
+cluster_id ENTERS user_clicks.list_of_clusters
+MAX(user_clicks.list_of_clusters) ENTERS user_clicks.recommeded
