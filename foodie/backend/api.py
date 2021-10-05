@@ -155,6 +155,22 @@ def get_recommendations_db(username, connect):
         print("USER HAS NO RECOMMENDATIONS FOR NOW.")
     return ""
 
+@app.route("/del_favourites", methods=['POST'])
+def del_favourites_fn():
+    connect = Connect()
+    username = request.form.to_dict()['username']
+    print("DEL FAVS #####################################", username)
+    del_favourites_db(username, connect)
+    return "200"
+
+def del_favourites_db(username, connect):
+    sql = "UPDATE favourites SET fav1='', fav2='', fav3='', fav4='', fav5='' WHERE username = '{}'".format(username)
+    print(sql)
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    db.commit()
+    connect.close()
+
 @app.route("/add_favourites", methods=['POST'])
 def add_favourites_fn():
     connect = Connect()
