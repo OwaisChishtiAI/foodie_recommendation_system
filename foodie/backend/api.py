@@ -17,7 +17,7 @@ class Connect:
         database="foodie_db",
         )
         self.db = mydb
-        self.cursor = self.db.cursor()
+        self.cursor = self.db.cursor(buffered=True)
         print("[INFO] Connected to Data base.")
     
     def pointer(self):
@@ -100,6 +100,7 @@ def recipe_details_db(recipe_title, connect):
     cursor, db = connect.pointer()
     cursor.execute(sql)
     details = cursor.fetchone()
+    print("RECIPE: ", details)
     connect.close()
     return details
 
@@ -213,9 +214,13 @@ def get_favourites_db(data, connect):
     sql = "SELECT fav1, fav2, fav3, fav4, fav5 FROM favourites WHERE username = '{}'".format(data["username"])
     cursor, db = connect.pointer()
     cursor.execute(sql)
+    details_li = []
     details = cursor.fetchone()
     connect.close()
-    return details
+    for each in details:
+        if each:
+            details_li.append(each)
+    return details_li
 
 def login_db(data, connect):
     username = data['username']
@@ -239,10 +244,10 @@ def login_db(data, connect):
             print("USER ALREADY EXISTS IN FAVS")
 
         sql4 = "SELECT username FROM user_clicks WHERE username = '{}'".format(username)
-        cursor.execute(sql2)
+        cursor.execute(sql4)
         exists = cursor.fetchone()
         if not exists:
-            sql5 = "INSERT INTO user_clicks (username) VALUES (%s, %s, %s);"
+            sql5 = "INSERT INTO user_clicks (username, list_of_clusters, recommended) VALUES (%s, %s, %s);"
             cursor.execute(sql5, (username,"",""))
             db.commit()
             print("USER SAVED IN USER CLICKS")
@@ -253,6 +258,52 @@ def login_db(data, connect):
         print("USER NOT FOUND")
     connect.close()
     return register_id
+
+@app.route("/post_comments", methods=['POST'])
+def post_comments_fn():
+    connect = Connect()
+    data = request.form.to_dict()
+    print("POST COMMENTS DATA#####################################", data)
+    status = post_comments_db(data, connect)
+    if status:
+        return "200"
+    else:
+        return "404"
+
+def post_comments_db(data, connect):
+    sql = "INSERT INTO recipe_review (recipe_title, review, user_email, user_name) VALUES (%s, %s, %s, %s);"
+    vals = (data['recipe'], data['comment_msg'], data['comment_email'], data['comment_name'])
+    print("@@@@@@@@@@@@@", (sql, vals))
+    cursor, db = connect.pointer()
+    cursor.execute(sql, vals)
+    db.commit()
+    connect.close()
+    return True
+
+@app.route("/get_comments", methods=['POST'])
+def get_comments_fn():
+    connect = Connect()
+    recipe = request.form.to_dict()['recipe']
+    print("GET COMMENTS DATA#####################################", recipe)
+    reviews = get_comments_db(recipe, connect)
+    if reviews:
+        return jsonify({'reviews': reviews})
+    else:
+        return ""
+
+def get_comments_db(recipe, connect):
+    sql = "SELECT user_name, review FROM recipe_review WHERE recipe_title = '{}'".format(recipe)
+    print("@@@@@@@@@@@@@", sql)
+    cursor, db = connect.pointer()
+    cursor.execute(sql)
+    reviews = cursor.fetchall()
+    connect.close()
+    print("REVIEWS: ", reviews)
+    if reviews:
+        if len(reviews) > 3:
+            reviews = reviews[:3]
+        return reviews
+    return ""
 
 if __name__ == "__main__":
     try:
